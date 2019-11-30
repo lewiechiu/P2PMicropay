@@ -4,10 +4,14 @@
 #include <arpa/inet.h>
 #include <string>
 #include <cstring>
-#include <unistd.h>
-#include <cstdio>
-#include <cstdlib>
+#include <vector>
 using namespace std;
+
+struct User{
+    string Name;
+    string Ip;
+    string Port;
+};
 
 int main(int argc, const char** argv) {
     int fd;
@@ -16,6 +20,11 @@ int main(int argc, const char** argv) {
         perror("socket");
         exit(1);
     }
+
+    vector<User> OnLineUser;
+    vector<User> Offline;
+
+
     struct sockaddr_in srv;
     struct sockaddr_in cli;
     int nbytes;

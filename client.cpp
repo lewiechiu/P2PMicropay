@@ -7,16 +7,16 @@ using namespace std;
 
 int main(int argc, char const *argv[]) 
 { 
-    Server srv(argv[1] , stoi(argv[2]));
-    srv.connect2Server();
+    cout << "Welcome to P2P Micropay" << endl;
+    cout << "current server Ip:Port 127.0.0.1:8080" << endl;
+    Client srv("127.0.0.1", "8080");
     char option = 'a';
-    if (argc <=2){
-        perror("argument missing!");
-        exit(1);
-    }
     while(1){
-        while (option != 'R' && option != 'L'){
-            cout << "press R to register or L to login" << endl;
+        while (option != 'R' && option != 'L' && option != 'M' && option != 'C' && option != 'Q'){
+            cout << "press R to register" << endl;
+            cout << "press L to login" << endl;
+            cout << "press M to Modify Server config" << endl;
+            cout << "press Q to Quit" << endl;
             cin >>  option;
         }
         if (option == 'R'){
@@ -27,12 +27,36 @@ int main(int argc, char const *argv[])
             // Check server status
         }
         else if (option == 'L'){
-            // Log in
-            // Setup connection
-            // Ask for User name and port
-            // Server response handling
+            string UserName;
+            string Port;
+            cout << "User Name: ";
+            cin >> UserName;
+            cout << "Port Number: ";
+            cin >> Port;
+            srv.Login(UserName, Port);
+            // srv.Listen();
+        }
+        else if (option == 'M'){
+            // Modify connect, otherwise uses default.
+            string IP, port;
+            srv.ServerLocation();
+            cout << "Ip: ";
+            cin >> IP;
+            cout << "Port: ";
+            cin >> port;
+            srv.UpdateConfig(IP, port);
+
+        }
+        else if (option == 'G'){
+            // GET current list of clients
+            srv.List();
+        }
+        else if (option == 'C'){
+            // Chat with other client
+            
         }
         else if (option == 'Q'){
+            srv.GoOffline();
             srv.Terminate();
             break;
         }

@@ -4,18 +4,25 @@
 #include <string>
 using namespace std;
 
-class Server{
+class Client{
     private:
         int sock;
-        int port;
+        string port;
+        string hosting_port;
         string Ip;
         bool isEncrypte=false;
     public:
-        Server(string IP, int PORT){port = PORT; Ip = IP; };
+        Client(string IP, string PORT){port = PORT; Ip = IP; };
+        void ServerLocation();
         void connect2Server();
+        void UpdateConfig(string IP, string PORT);
         void Terminate();
         void Register(string);
-        void Login()
+        void Login(string User, string port);
+        void GoOffline();
+        void List();
+        void Listen();
+
         // Setup connection to server
         
     
