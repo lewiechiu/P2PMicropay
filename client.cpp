@@ -10,6 +10,7 @@ int main(int argc, char const *argv[])
     cout << "Welcome to P2P Micropay" << endl;
     cout << "current server Ip:Port 127.0.0.1:8080" << endl;
     Client srv("127.0.0.1", "8080");
+    srv.connect2Server();
     char option = 'a';
     while(1){
         while (option != 'R' && option != 'L' && option != 'M' && option != 'C' && option != 'Q'){
@@ -17,12 +18,15 @@ int main(int argc, char const *argv[])
             cout << "press L to login" << endl;
             cout << "press M to Modify Server config" << endl;
             cout << "press Q to Quit" << endl;
+            cout << "press A to connect to server" << endl;
+            cout << "press G to List the online clients" << endl;
             cin >>  option;
         }
         if (option == 'R'){
             string UserName;
             cout << "User name: ";
             cin >> UserName;
+            UserName.append("\n");
             srv.Register(UserName);
             // Check server status
         }
@@ -46,6 +50,8 @@ int main(int argc, char const *argv[])
             cin >> port;
             srv.UpdateConfig(IP, port);
 
+            srv.connect2Server();
+
         }
         else if (option == 'G'){
             // GET current list of clients
@@ -59,6 +65,9 @@ int main(int argc, char const *argv[])
             srv.GoOffline();
             srv.Terminate();
             break;
+        }
+        else if (option == 'A'){
+            srv.connect2Server();
         }
         option=0;
     }

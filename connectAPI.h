@@ -7,6 +7,7 @@ using namespace std;
 class Client{
     private:
         int sock;
+        char rep[1024] = {0};
         string port;
         string hosting_port;
         string Ip;
@@ -21,7 +22,8 @@ class Client{
         void Login(string User, string port);
         void GoOffline();
         void List();
-        void Listen();
+        void StartChatServer();
+        void SendCommand(string command, char* resp);
 
         // Setup connection to server
         

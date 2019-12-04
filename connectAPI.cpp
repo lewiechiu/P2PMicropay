@@ -6,9 +6,19 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <string>
+#include <stdio.h>
+#include <string.h>
 
 using namespace std;
 
+void Client::SendCommand(string command, char* resp){
+
+    memset(resp, 0, 1024);
+    write(sock, command.c_str(), command.length());
+    read(sock, resp, 1024);
+    puts(resp);
+    return;
+}
 
 void Client::connect2Server(){
     struct sockaddr_in srv; 
@@ -28,18 +38,20 @@ void Client::connect2Server(){
         printf("Socket creation error, please config \n"); 
         return ;
     }
+
+    char buf[100] = {0};
+    read(sock, buf, 100);
+    cout << buf << endl;
 }
 
 void Client::Terminate(){close(sock);}
 
 void Client::Register(string Username){
-    char buf[256];
-    string command = "REGISTER ";
+    string command = "REGISTER#";
     command.append(Username);
-    write(sock, command.c_str(), command.length());
-    read(sock, buf, 256);
-    string response(buf);
-    // cout << response << "*" << endl;
+    SendCommand(command, rep);
+
+    string response(rep);
     if (stoi(response.substr(0,3)) == 210){
         cout << "ERROR: Register fail, Please try again!" << endl;
     }
@@ -56,22 +68,26 @@ void Client::Login(string User, string port){
     command.append("#");
     command.append(port);
     hosting_port = port;
-    // cout << command;
-    write(sock, command.c_str(), command.length());
-    char buf[10000] = {0};
-    read(sock, buf, 10000);
-    cout << buf << endl;
-    string response(buf);
+    command.append("\n");
+    cout << command << endl;
+    SendCommand(command, rep);
+
+    string response(rep);
     if (response.find("220 AUTH_FAIL") != string::npos){
         cout << "Login Fail, Please try again" << endl;
         return;
     }
     else{
-
+        int cnt = 0;
+        while(response.find('\n')!=string::npos){
+            response.replace(response.find('\n'), 1, "_");
+        }
+        cout << response << endl;
+        
     }
 }
 
-void Client::Listen(){
+void Client::StartChatServer(){
     
 }
 
@@ -80,10 +96,10 @@ void Client::ServerLocation(){
 }
 
 void Client::GoOffline(){
-    write(sock, "Exit", 5);
-    char response[10] = {0};
-    read(sock, response, 10);
-    string resp(response);
+    string exit("Exit\n");
+    SendCommand(exit, rep);
+    string resp(rep);
+    cout << resp << endl;
     if (resp.find("Bye") != string::npos){
         cout << "Disconnected!" << endl;
         return;
@@ -91,9 +107,9 @@ void Client::GoOffline(){
 }
 
 void Client::List(){
-    write(sock, "List", 5);
-    char resp[10000] = {0};
-    read(sock, resp, 10000);
+    string list("List\n");
+    SendCommand(list, rep);
+    string resp(rep);
     cout << resp << endl;
     return;
 }

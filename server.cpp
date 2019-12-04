@@ -16,13 +16,11 @@ struct User{
 int main(int argc, const char** argv) {
     int fd;
     // socket()
-    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-        perror("socket");
-        exit(1);
-    }
-
+    
+    bool status = false, present = false, msg_detail = false;
     vector<User> OnLineUser;
     vector<User> Offline;
+
 
 
     struct sockaddr_in srv;
@@ -30,6 +28,32 @@ int main(int argc, const char** argv) {
     int nbytes;
     char buf[512] = "";
     unsigned cli_len = sizeof(cli);
+
+    // CMD args
+    if (argc <= 1){
+        perror("arg missing");
+        exit(1);
+    }
+    if (argc >2){
+        if (argv[2] == "-d"){
+            // Show Reg, Login, Leave
+            status = true;
+        }
+        else if(argv[2] == "-s"){
+            // Show List + above
+            status = present = true;
+        }
+        else{
+            // Show msg between cli and server
+            status = present = msg_detail = true;
+        }
+    }
+
+    // socket init
+    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+        perror("socket");
+        exit(1);
+    }
 
     srv.sin_family = AF_INET;
     srv.sin_port = htons(stoi(argv[1]));
