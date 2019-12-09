@@ -12,6 +12,7 @@ class Client{
         string hosting_port;
         string Ip;
         bool isEncrypte=false;
+        bool isLoggedIn = false;
     public:
         Client(string IP, string PORT){port = PORT; Ip = IP; };
         void ServerLocation();
@@ -21,12 +22,13 @@ class Client{
         void Register(string);
         void Login(string User, string port);
         void GoOffline();
-        void List();
+        void GrabOnlineList();
         void StartChatServer();
         void SendCommand(string command, char* resp);
+        void ReadLine(char* resp, bool print);
 
         // Setup connection to server
-        
+        bool LoginState() {return isLoggedIn;};
     
 };
 

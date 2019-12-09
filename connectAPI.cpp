@@ -8,16 +8,20 @@
 #include <string>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 using namespace std;
 
 void Client::SendCommand(string command, char* resp){
-
-    memset(resp, 0, 1024);
     write(sock, command.c_str(), command.length());
-    read(sock, resp, 1024);
-    puts(resp);
     return;
+}
+void Client::ReadLine(char* resp, bool print){
+    memset(resp, 0, 1024);
+    read(sock, resp, 1024);
+    if (print)
+        printf("%s", resp);
+    return ;
 }
 
 void Client::connect2Server(){
@@ -41,7 +45,7 @@ void Client::connect2Server(){
 
     char buf[100] = {0};
     read(sock, buf, 100);
-    cout << buf << endl;
+    printf("%s\n", buf);
 }
 
 void Client::Terminate(){close(sock);}
@@ -50,7 +54,7 @@ void Client::Register(string Username){
     string command = "REGISTER#";
     command.append(Username);
     SendCommand(command, rep);
-
+    ReadLine(rep, false);
     string response(rep);
     if (stoi(response.substr(0,3)) == 210){
         cout << "ERROR: Register fail, Please try again!" << endl;
@@ -63,28 +67,70 @@ void Client::Register(string Username){
 
 void Client::UpdateConfig(string IP, string PORT) {Ip = IP; port = PORT;}
 
+void Client::GrabOnlineList(){
+    string list("List");
+    list.push_back('\n');
+    SendCommand(list, rep);
+    printf("sent \n");
+    cout << "balance: ";
+    ReadLine(rep, true);
+    string response(rep);
+    cout << "*" << endl;
+    if (response.find("number") == string::npos){
+        ReadLine(rep, true);
+        cout << "**" << endl;
+        string users(rep);
+        if (users.length() <= 30){
+            // The returned string does not contain User and IP
+            ReadLine(rep, true);
+            cout << "***" << endl;
+        }
+        else{
+            cout << "***" << endl;
+        }
+    }
+    
+    return;
+}
 void Client::Login(string User, string port){
     string command(User);
     command.append("#");
     command.append(port);
     hosting_port = port;
     command.append("\n");
-    cout << command << endl;
     SendCommand(command, rep);
-
+    cout << "Balance: ";
+    ReadLine(rep, true);
     string response(rep);
-    if (response.find("220 AUTH_FAIL") != string::npos){
+    cout << "*" << endl;
+    if (strcmp(rep, "220 AUTH_FAIL\n") == 0){
         cout << "Login Fail, Please try again" << endl;
         return;
     }
     else{
-        int cnt = 0;
-        while(response.find('\n')!=string::npos){
-            response.replace(response.find('\n'), 1, "_");
-        }
-        cout << response << endl;
-        
+        isLoggedIn = true;
     }
+    if (response.find("number") == string::npos){
+        ReadLine(rep, true);
+        cout << "**" << endl;
+        string users(rep);
+        if (users.length() <= 30){
+            // The returned string does not contain User and IP
+            users.replace(0, 27, "");
+            int num_user = atoi(users.c_str());
+            for (int num = 0; num<num_user;num++){
+
+                ReadLine(rep, true);
+                cout << "***" << endl;
+            }
+        }
+        else{
+            cout << "***" << endl;
+        }
+    }
+    
+    // else: contains all of them in one line.
+    
 }
 
 void Client::StartChatServer(){
@@ -98,18 +144,11 @@ void Client::ServerLocation(){
 void Client::GoOffline(){
     string exit("Exit\n");
     SendCommand(exit, rep);
+    ReadLine(rep, false);
     string resp(rep);
-    cout << resp << endl;
     if (resp.find("Bye") != string::npos){
         cout << "Disconnected!" << endl;
         return;
     }
 }
 
-void Client::List(){
-    string list("List\n");
-    SendCommand(list, rep);
-    string resp(rep);
-    cout << resp << endl;
-    return;
-}

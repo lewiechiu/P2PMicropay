@@ -5,31 +5,14 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include "srv.h"
+#include <thread>
 using namespace std;
 
-struct User{
-    string Name;
-    string Ip;
-    string Port;
-};
-
 int main(int argc, const char** argv) {
-    int fd;
-    // socket()
-    
-    bool status = false, present = false, msg_detail = false;
-    vector<User> OnLineUser;
-    vector<User> Offline;
-
-
-
-    struct sockaddr_in srv;
-    struct sockaddr_in cli;
-    int nbytes;
-    char buf[512] = "";
-    unsigned cli_len = sizeof(cli);
-
     // CMD args
+    bool status = false, present = false, msg_detail = false;
+    
     if (argc <= 1){
         perror("arg missing");
         exit(1);
@@ -49,14 +32,20 @@ int main(int argc, const char** argv) {
         }
     }
 
-    // socket init
+    int fd, newfd;
+    // socket()
+    Server SERVER;
+    char buf[512] = {0};
+
+    struct sockaddr_in srv;
+    struct sockaddr_in cli;
+
     if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
         perror("socket");
         exit(1);
     }
-
     srv.sin_family = AF_INET;
-    srv.sin_port = htons(stoi(argv[1]));
+    srv.sin_port = htons(8080);
     srv.sin_addr.s_addr = htonl(INADDR_ANY);
 
     //bind()
@@ -65,45 +54,42 @@ int main(int argc, const char** argv) {
     }
 
     // listen()
-    if (listen(fd, 100) < 0){
+    if (listen(fd, 10) < 0){
         perror("listen");
         exit(1);
     }
     int cnt = 0;
-    cout << "listening on port:" << argv[1] << endl;
-    fd = accept(fd, (struct sockaddr *)&cli, &cli_len);
+
+    unsigned cli_len = sizeof(cli);
+    newfd = accept(fd, (struct sockaddr *)&cli, &cli_len);
+    SERVER.SetFD(newfd);
+    SERVER.SendMsg("Hello!!");
+    cout << "Client connected" << endl;
+
     while(1){
         //accept()
-        if (fd <0 ){
-            perror("accept");
-            exit(1);
-        }
-        cout << "recv from " << inet_ntoa(cli.sin_addr) << ":" << cli.sin_port << endl;
-        if ((nbytes = read(fd, buf , sizeof(buf))) < 0 ){
-            perror("read");
-            exit(1);
-        }
+        
+        SERVER.ReadMsg(buf);
+        // Start to process!
         string command(buf);
-        cout << "msg from:" << inet_ntoa(cli.sin_addr) << " " << buf << endl;
-        if (command.find("REGISTER") != string::npos){
-            
-            write(fd, "100 OK", 7);
+        if (command.find("REGISTER#") != string::npos){
+            cout << "comm: " <<  command << endl;
+            if (SERVER.RegisterClient(command) == EXIST){
+                SERVER.SendMsg("210 FAIL");
+            }
+            else{
+                SERVER.SendMsg("100 OK");
+            }
         }
-        else{
+        else if (command.find("Exit") != string::npos){
+            close(newfd);
 
         }
-        memset( buf, '\0', sizeof(char*));
-        break;
+        command.clear();
     }
     // close(newfd);
     
 
     // read()
-    
-
-
-
-
-    close(fd);
     return 0;
 }
