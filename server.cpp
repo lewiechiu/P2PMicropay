@@ -9,6 +9,8 @@
 #include <thread>
 using namespace std;
 
+
+
 int main(int argc, const char** argv) {
     // CMD args
     bool status = false, present = false, msg_detail = false;
@@ -34,8 +36,6 @@ int main(int argc, const char** argv) {
 
     int fd, newfd;
     // socket()
-    Server SERVER;
-    char buf[512] = {0};
 
     struct sockaddr_in srv;
     struct sockaddr_in cli;
@@ -59,33 +59,13 @@ int main(int argc, const char** argv) {
         exit(1);
     }
     int cnt = 0;
-
+    pthread_t t_id[10];
     unsigned cli_len = sizeof(cli);
-    newfd = accept(fd, (struct sockaddr *)&cli, &cli_len);
-    SERVER.SetFD(newfd);
-    SERVER.SendMsg("Hello!!");
-    cout << "Client connected" << endl;
+
 
     while(1){
         //accept()
-        
-        SERVER.ReadMsg(buf);
-        // Start to process!
-        string command(buf);
-        if (command.find("REGISTER#") != string::npos){
-            cout << "comm: " <<  command << endl;
-            if (SERVER.RegisterClient(command) == EXIST){
-                SERVER.SendMsg("210 FAIL");
-            }
-            else{
-                SERVER.SendMsg("100 OK");
-            }
-        }
-        else if (command.find("Exit") != string::npos){
-            close(newfd);
-
-        }
-        command.clear();
+        newfd = accept(fd, (struct sockaddr *)&cli, &cli_len);
     }
     // close(newfd);
     

@@ -9,6 +9,7 @@
 using namespace std;
 
 enum status {SUCCESS, EXIST, UNDEFINED, ERROR};
+enum Mode {REGISTER, LOGIN, QUIT, GET, PARSE_ERROR};
 // Server returns one of the above.
 
 
@@ -24,13 +25,18 @@ class Server {
         char buf[512] = "";
         vector<User* > Users;
     public:
-        void SetFD(int &sock);
-        void ReadMsg(char* );
-        void SendMsg(char* );
         status RegisterClient(string name);
         status GoOnline(string name, string port);
+        status GoOffline(string name);
         void GetClientList();
         
 };
+
+void SendMsg(int& sock, char* msg);
+void ReadMsg(int& sock, char* msg, bool print);
+
+Mode parsing(string cmd);
+
+void * client(int* sock);
 
 #endif

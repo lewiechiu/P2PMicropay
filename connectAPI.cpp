@@ -18,7 +18,23 @@ void Client::SendCommand(string command, char* resp){
 }
 void Client::ReadLine(char* resp, bool print){
     memset(resp, 0, 1024);
-    read(sock, resp, 1024);
+    fd_set rfds;
+    struct timeval tv;
+    int retval;
+
+    /* Watch stdin (fd 0) to see when it has input. */
+    FD_ZERO(&rfds);
+    FD_SET(sock, &rfds);
+    /* Wait up to five seconds. */
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+
+    retval = select(sock+1, &rfds, NULL, NULL, &tv);
+    /* Don't rely on the value of tv now! */
+
+    if (retval)
+        read(sock, resp, 1024);
+        /* FD_ISSET(0, &rfds) will be true. */
     if (print)
         printf("%s", resp);
     return ;
@@ -71,22 +87,26 @@ void Client::GrabOnlineList(){
     string list("List");
     list.push_back('\n');
     SendCommand(list, rep);
-    printf("sent \n");
-    cout << "balance: ";
+    cout << "Balance: ";
     ReadLine(rep, true);
     string response(rep);
-    cout << "*" << endl;
-    if (response.find("number") == string::npos){
+    // cout << "*" << endl;
+    if (response.find("#") == string::npos){
         ReadLine(rep, true);
-        cout << "**" << endl;
+        // cout << "**" << endl;
         string users(rep);
         if (users.length() <= 30){
             // The returned string does not contain User and IP
-            ReadLine(rep, true);
-            cout << "***" << endl;
+            users.replace(0, 27, "");
+            int num_user = atoi(users.c_str()) + 1;
+            for (int num = 0; num<num_user;num++){
+
+                ReadLine(rep, true);
+                // cout << "***" << endl;
+            }
         }
         else{
-            cout << "***" << endl;
+            // cout << "***" << endl;
         }
     }
     
@@ -102,7 +122,7 @@ void Client::Login(string User, string port){
     cout << "Balance: ";
     ReadLine(rep, true);
     string response(rep);
-    cout << "*" << endl;
+    // cout << "*" << endl;
     if (strcmp(rep, "220 AUTH_FAIL\n") == 0){
         cout << "Login Fail, Please try again" << endl;
         return;
@@ -110,14 +130,14 @@ void Client::Login(string User, string port){
     else{
         isLoggedIn = true;
     }
-    if (response.find("number") == string::npos){
+    if (response.find("#") == string::npos){
         ReadLine(rep, true);
         cout << "**" << endl;
         string users(rep);
         if (users.length() <= 30){
             // The returned string does not contain User and IP
             users.replace(0, 27, "");
-            int num_user = atoi(users.c_str());
+            int num_user = atoi(users.substr(0, users.find('\n')).c_str());;
             for (int num = 0; num<num_user;num++){
 
                 ReadLine(rep, true);
@@ -125,7 +145,7 @@ void Client::Login(string User, string port){
             }
         }
         else{
-            cout << "***" << endl;
+            cout << "****" << endl;
         }
     }
     

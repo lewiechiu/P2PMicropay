@@ -6,10 +6,10 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <mutex>
 using namespace std;
 
-void Server::SetFD(int &sock){fd = sock;}
-
+Server SERVER;
 status Server::GoOnline(string name, string port){
 
 }
@@ -38,35 +38,67 @@ status Server::RegisterClient(string name){
     return SUCCESS;
 }
 
+status Server::GoOffline(string name){
+    
+    
+    return SUCCESS;
+}
+
 void Server::GetClientList(){
 
 }
 
-void Server::ReadMsg(char* msg = nullptr){
-    if (msg == nullptr){
-        // Use buf as ptr
-        memset( buf, 0, 512);
-        if (read(fd, buf , 512) < 0){
-            perror("read foul");
-            return;
-        }
-        for (int i=0;buf[i]!=0; i++)
-            printf("%c", buf[i]);
-    }
-    else{
-        if (read(fd, msg , 512) < 0){
-            perror("read foul");
-            return;
-        }
-        for (int i=0;msg[i]!=0; i++)
-            printf("%c", msg[i]);
-        printf("*");
-    }
+
+
+
+
+Mode parsing(string cmd){
+
 }
 
-void Server::SendMsg(char* msg){
+
+void SendMsg(int& sock, char* msg){
     string msg_(msg);
     msg_.push_back('\n');
-    write(fd, msg, msg_.length());
+    write(sock, msg, msg_.length());
     return;
+}
+
+void ReadMsg(int& sock,char* msg, bool print){
+    memset(msg, 0, 1024);
+    fd_set rfds;
+    struct timeval tv;
+    int retval;
+
+    /* Watch stdin (fd 0) to see when it has input. */
+    FD_ZERO(&rfds);
+    FD_SET(sock, &rfds);
+    tv.tv_sec = 1;
+    tv.tv_usec = 0;
+
+    retval = select(sock+1, &rfds, NULL, NULL, &tv);
+    if (retval)
+        read(sock, msg, 1024);
+    if (print)
+        printf("%s", msg);
+    return ;
+}
+
+void* client(int* sock){
+    char buf[512] = {0};
+    ReadMsg(*sock,buf, true);
+    string cmd(buf);
+    if (cmd.find("REGISTER") != string::npos){
+        SERVER.RegisterClient(cmd);
+    }
+    else if (cmd.find("LOGIN") != string::npos){
+        SERVER.GoOnline(cmd.substr(0, cmd.find('#')), cmd.substr(cmd.find('#') + 1, cmd.length()));
+    }
+    else if (cmd.find("List") != string::npos){
+        SERVER.GetClientList();
+    }
+    else if (cmd.find("Exit")!= string::npos){
+        cmd.erase(0, 5);
+        SERVER.GoOffline(cmd);
+    }
 }
