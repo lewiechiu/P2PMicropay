@@ -11,7 +11,14 @@ using namespace std;
 
 Server SERVER;
 status Server::GoOnline(string name, string port){
-
+    for (int i = 0;i< Users.size(); i++){
+        if (Users[i]->Name == name){
+            Users[i]->isOnline = true;
+            Users[i]->Port = port;
+            return SUCCESS;
+        }
+    }
+    return status::ERROR;
 }
 
 status Server::RegisterClient(string name){
@@ -60,45 +67,51 @@ Mode parsing(string cmd){
 void SendMsg(int& sock, char* msg){
     string msg_(msg);
     msg_.push_back('\n');
-    write(sock, msg, msg_.length());
+    cout << msg_ ;
+    write(sock, msg_.c_str(), msg_.length());
     return;
 }
 
 void ReadMsg(int& sock,char* msg, bool print){
     memset(msg, 0, 1024);
-    fd_set rfds;
-    struct timeval tv;
-    int retval;
-
-    /* Watch stdin (fd 0) to see when it has input. */
-    FD_ZERO(&rfds);
-    FD_SET(sock, &rfds);
-    tv.tv_sec = 1;
-    tv.tv_usec = 0;
-
-    retval = select(sock+1, &rfds, NULL, NULL, &tv);
-    if (retval)
-        read(sock, msg, 1024);
-    if (print)
-        printf("%s", msg);
+    read(sock, msg, 1024);
     return ;
 }
 
-void* client(int* sock){
-    char buf[512] = {0};
-    ReadMsg(*sock,buf, true);
-    string cmd(buf);
-    if (cmd.find("REGISTER") != string::npos){
-        SERVER.RegisterClient(cmd);
-    }
-    else if (cmd.find("LOGIN") != string::npos){
-        SERVER.GoOnline(cmd.substr(0, cmd.find('#')), cmd.substr(cmd.find('#') + 1, cmd.length()));
-    }
-    else if (cmd.find("List") != string::npos){
-        SERVER.GetClientList();
-    }
-    else if (cmd.find("Exit")!= string::npos){
-        cmd.erase(0, 5);
-        SERVER.GoOffline(cmd);
+void* client(void* sk){
+    int *sock = (int*)sk;
+    SendMsg(*sock, "hello!");
+    char buf[1024] = {0};
+    bool logged_in = false;
+    while(1){
+
+        ReadMsg(*sock,buf, true);        
+        string cmd(buf);
+        if (cmd.find("REGISTER") != string::npos ){
+            status response = SERVER.RegisterClient(cmd);
+            if (response == SUCCESS){
+                char msg[] = "100 OK\n";
+                SendMsg(*sock, msg);
+            }
+            else if (response == EXIST){
+                char msg[] = "210 fail\n";
+                SendMsg(*sock, msg);
+            }
+            else{
+                SendMsg(*sock, "Don't know what happened\n");
+            }
+        }
+        else if (cmd.find("LOGIN") != string::npos){
+            if (SERVER.GoOnline(cmd.substr(0, cmd.find('#')), cmd.substr(cmd.find('#') + 1, cmd.length())) == SUCCESS){
+                logged_in = true;
+            }
+        }
+        else if (cmd.find("List") != string::npos){
+            SERVER.GetClientList();
+        }
+        else if (cmd.find("Exit")!= string::npos){
+            cmd.erase(0, 5);
+            SERVER.GoOffline(cmd);
+        }
     }
 }

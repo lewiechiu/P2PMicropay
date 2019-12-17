@@ -89,27 +89,6 @@ void Client::GrabOnlineList(){
     SendCommand(list, rep);
     cout << "Balance: ";
     ReadLine(rep, true);
-    string response(rep);
-    // cout << "*" << endl;
-    if (response.find("#") == string::npos){
-        ReadLine(rep, true);
-        // cout << "**" << endl;
-        string users(rep);
-        if (users.length() <= 30){
-            // The returned string does not contain User and IP
-            users.replace(0, 27, "");
-            int num_user = atoi(users.c_str()) + 1;
-            for (int num = 0; num<num_user;num++){
-
-                ReadLine(rep, true);
-                // cout << "***" << endl;
-            }
-        }
-        else{
-            // cout << "***" << endl;
-        }
-    }
-    
     return;
 }
 void Client::Login(string User, string port){
@@ -119,8 +98,7 @@ void Client::Login(string User, string port){
     hosting_port = port;
     command.append("\n");
     SendCommand(command, rep);
-    cout << "Balance: ";
-    ReadLine(rep, true);
+    ReadLine(rep, false);
     string response(rep);
     // cout << "*" << endl;
     if (strcmp(rep, "220 AUTH_FAIL\n") == 0){
@@ -129,27 +107,10 @@ void Client::Login(string User, string port){
     }
     else{
         isLoggedIn = true;
+        
+        cout << "Balance: ";
+        cout << response;
     }
-    if (response.find("#") == string::npos){
-        ReadLine(rep, true);
-        cout << "**" << endl;
-        string users(rep);
-        if (users.length() <= 30){
-            // The returned string does not contain User and IP
-            users.replace(0, 27, "");
-            int num_user = atoi(users.substr(0, users.find('\n')).c_str());;
-            for (int num = 0; num<num_user;num++){
-
-                ReadLine(rep, true);
-                cout << "***" << endl;
-            }
-        }
-        else{
-            cout << "****" << endl;
-        }
-    }
-    
-    // else: contains all of them in one line.
     
 }
 

@@ -37,6 +37,6 @@ void ReadMsg(int& sock, char* msg, bool print);
 
 Mode parsing(string cmd);
 
-void * client(int* sock);
+void * client(void* sk);
 
 #endif

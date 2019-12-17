@@ -58,14 +58,30 @@ int main(int argc, const char** argv) {
         perror("listen");
         exit(1);
     }
+    cout << "listening" << endl;
     int cnt = 0;
     pthread_t t_id[10];
     unsigned cli_len = sizeof(cli);
 
-
+    int i=0;
     while(1){
         //accept()
         newfd = accept(fd, (struct sockaddr *)&cli, &cli_len);
+        cout << fd << endl << newfd << endl;
+        cout << "user connected" << endl;
+        if (pthread_create(&t_id[i], NULL, client, &newfd) != 0){
+            perror("thread creation error");
+        }
+
+        i++;
+        
+        if (i >= 10){
+            i = 0;
+            while(i<10){
+                pthread_join(t_id[i], NULL);
+                i++;
+            }
+        }
     }
     // close(newfd);
     
