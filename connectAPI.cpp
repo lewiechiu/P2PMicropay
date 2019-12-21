@@ -72,10 +72,10 @@ void Client::Register(string Username){
     SendCommand(command, rep);
     ReadLine(rep, false);
     string response(rep);
-    if (stoi(response.substr(0,3)) == 210){
+    if (response.find("210 fail") != string::npos){
         cout << "ERROR: Register fail, Please try again!" << endl;
     }
-    else{
+    else if (response.find("100 ") != string::npos){
         cout << "Registered!" << endl;
     }
 }
@@ -85,33 +85,29 @@ void Client::UpdateConfig(string IP, string PORT) {Ip = IP; port = PORT;}
 
 void Client::GrabOnlineList(){
     string list("List");
-    list.push_back('\n');
     SendCommand(list, rep);
     cout << "Balance: ";
     ReadLine(rep, true);
     return;
 }
 void Client::Login(string User, string port){
-    string command(User);
+    string command("LOGIN");
+    command.append(User.c_str());
     command.append("#");
     command.append(port);
     hosting_port = port;
-    command.append("\n");
     SendCommand(command, rep);
     ReadLine(rep, false);
     string response(rep);
-    // cout << "*" << endl;
-    if (strcmp(rep, "220 AUTH_FAIL\n") == 0){
+    if (response.find("220") != string::npos){
         cout << "Login Fail, Please try again" << endl;
         return;
     }
     else{
         isLoggedIn = true;
-        
         cout << "Balance: ";
-        cout << response;
+        ReadLine(rep, true);
     }
-    
 }
 
 void Client::StartChatServer(){
@@ -123,7 +119,7 @@ void Client::ServerLocation(){
 }
 
 void Client::GoOffline(){
-    string exit("Exit\n");
+    string exit("Exit");
     SendCommand(exit, rep);
     ReadLine(rep, false);
     string resp(rep);

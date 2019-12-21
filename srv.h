@@ -28,15 +28,15 @@ class Server {
         status RegisterClient(string name);
         status GoOnline(string name, string port);
         status GoOffline(string name);
-        void GetClientList();
+        void GetClientList(string name, stringstream &out);
         
 };
 
-void SendMsg(int& sock, char* msg);
+void SendMsg(int& sock,const char* msg);
 void ReadMsg(int& sock, char* msg, bool print);
 
 Mode parsing(string cmd);
 
-void * client(void* sk);
+void * client(int sk);
 
 #endif
