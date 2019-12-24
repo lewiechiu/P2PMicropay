@@ -24,20 +24,19 @@ int main(int argc, const char** argv) {
     if (argc >2){
         if (argv[2] == "-d"){
             // Show Reg, Login, Leave
-            status = true;
+            cmd_state = FUNCTION;
         }
         else if(argv[2] == "-s"){
             // Show List + above
-            status = present = true;
+            cmd_state = LIST;
         }
         else{
             // Show msg between cli and server
-            status = present = msg_detail = true;
+            cmd_state = FULL;
         }
     }
 
     int fd, newfd;
-    // socket()
 
     struct sockaddr_in srv;
     struct sockaddr_in cli;
@@ -46,6 +45,7 @@ int main(int argc, const char** argv) {
         perror("socket");
         exit(1);
     }
+    // Uses socket option and prevents bind error.
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,  &opt, sizeof(opt))) 
     { 
         perror("setsockopt"); 
@@ -65,22 +65,19 @@ int main(int argc, const char** argv) {
         perror("listen");
         exit(1);
     }
-    cout << "listening" << endl;
-    int cnt = 0;
-    thread t_id[10];
+    cout << "Server Ready..." << endl;
     unsigned cli_len = sizeof(cli);
 
-    int i=0;
     while(1){
         //accept()
         newfd = accept(fd, (struct sockaddr *)&cli, &cli_len);
-        cout << newfd << endl;
-        cout << "user connected: " << inet_ntoa(cli.sin_addr) << endl;
-        pool.enqueue(client, newfd);
-    }
-    // close(newfd);
-    
+        
+        // Creates Thread arg
+        thread_arg *args = new thread_arg;
+        args->ip = inet_ntoa(cli.sin_addr);
+        args->sock = newfd;
 
-    // read()
+        pool.enqueue(client, args);
+    }
     return 0;
 }

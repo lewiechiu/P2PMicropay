@@ -10,82 +10,74 @@
 #include <mutex>
 using namespace std;
 
-Server SERVER;
-status Server::GoOnline(string name, string port){
+// enum status {SUCCESS, EXIST, UNDEFINED, ERROR};
+// enum Mode {REGISTER, LOGIN, QUIT, GET, PARSE_ERROR};
 
-    for (int i = 0;i< Users.size(); i++){
-        if (Users[i]->Name == name){
-            Users[i]->isOnline = true;
-            Users[i]->Port = port;
-            return SUCCESS;
-        }
+Server SERVER;
+status Server::GoOnline(string name, string port, string ip){
+    map<string, User*>::iterator itr;
+    itr = Users.find(name);
+    if (itr == Users.end())
+        return status::ERROR;
+    else if (itr->second->isOnline)
+        return status::ERROR;
+    else{
+        itr->second->isOnline = true;
+        itr->second->Port = port;
+        itr->second->Ip = ip;
     }
-    return status::ERROR;
+        
+    return status::SUCCESS;
 }
 
 status Server::RegisterClient(string name){
     name.erase(0, 9);
     while(name.find('\n')!= string::npos)
         name.replace(name.find('\n'), 1, "");
-    
-    cout << "Register name: " <<  name << endl;
-    
-    for (int i=0;i<Users.size(); i++){
-        if (Users[i]->Name == name){
-            cout << "Exist, failed to create" << endl;
-            return EXIST;
-        }
+    cout << "**** Register User ****" << endl;
+    cout << "name: " <<  name << endl;
+    map<string, User*>::iterator itr;
+    itr = Users.find(name);
+
+    if (itr == Users.end()){
+        User* new_client = new User;
+        new_client->Name = name;
+        Users.insert(pair<string, User*>(name, new_client) );
+        cout <<"Current user size: " << Users.size() << endl;
+        cout << "***** Finish Register Process ******" << endl;
+        return SUCCESS;
     }
-    cout << "not exist, allow to create" << endl;
-    User* new_client = new User;
-    new_client->Name = name;
-    Users.push_back(new_client);
-    cout <<"User size: " << Users.size() << endl;
-    for (int i=0;i<Users.size(); i++){
-        cout << Users[i]->Name << "#" << Users[i]->balance << endl;
+    else{
+        cout << "FATAL ERROR: name exists! " << endl;
+        cout << "***** Finish Register Process ******" << endl;
+        return EXIST;
     }
-    return SUCCESS;
+    
 }
 
 status Server::GoOffline(string name){
-    for (int i = 0;i< Users.size(); i++){
-        
-        if (Users[i]->Name == name){
-            Users[i]->isOnline = false;
-        }
-    }
+    map<string, User*>::iterator itr;
+    itr = Users.find(name);
+    itr->second->isOnline = false;
     return SUCCESS;
 }
 
 void Server::GetClientList(string name, stringstream &out){
-    for (int i = 0;i< Users.size(); i++){
-        
-        if (Users[i]->Name == name){
-            out << Users[i]->balance << endl;
-        }
-    }
+    map<string, User*>::iterator itr;
+    itr = Users.find(name);
+    out << itr->second->balance << endl;
     out << "currently online client count: ";
     int cnt = 0;
-    for (int i=0;i<Users.size(); i++){
-        if (Users[i]->isOnline)
+    for (auto i = Users.begin() ; i != Users.end() ; i++){
+        if (i->second->isOnline)
             cnt ++;
     }
     out << cnt << endl;
-    for (int i = 0;i< Users.size(); i++){
-        if (Users[i]->isOnline){
-            out << Users[i]->Name << "#" << Users[i]->Port << endl;
-        }
+    for (auto i = Users.begin() ; i != Users.end() ; i++){
+        if (i->second->isOnline)
+            out << i->second->Name << "#" << i->second->Ip << "#" << i->second->Port << endl;
     }
 }
-
-
-
-
-
-Mode parsing(string cmd){
-
-}
-
 
 void SendMsg(int& sock,const char* msg){
     string msg_(msg);
@@ -104,13 +96,14 @@ void ReadMsg(int& sock,char* msg, bool print){
     return ;
 }
 
-void* client(int sock){
+void* client(thread_arg* arg){
+    int sock = arg->sock;
     SendMsg(sock, "hello!");
     char buf[1024] = {0};
     bool logged_in = false;
     string name;
+    string IP_addr = arg->ip;
     while(1){
-
         ReadMsg(sock,buf, true);
         string cmd(buf);
         if(logged_in){
@@ -132,7 +125,7 @@ void* client(int sock){
                 cmd.replace(0, 5, "");
                 name = cmd.substr(0, cmd.find('#'));
                 cmd.replace(0, name.length() + 1, "");
-                if (SERVER.GoOnline(name, cmd) == SUCCESS){
+                if (SERVER.GoOnline(name, cmd, IP_addr) == SUCCESS){
                     logged_in = true;
                     SendMsg(sock, "100 OK\n");
                     stringstream out;
@@ -148,7 +141,7 @@ void* client(int sock){
                 if (response == SUCCESS){
                     SendMsg(sock, "100 OK\n");
                 }
-                else if (response == EXIST){
+                else {
                     SendMsg(sock, "210 fail\n");
                 }
             }
