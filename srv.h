@@ -12,7 +12,6 @@ using namespace std;
 enum status {SUCCESS, EXIST, UNDEFINED, ERROR};
 enum Mode {REGISTER, LOGIN, QUIT, GET, PARSE_ERROR};
 enum printing {FULL, LIST, FUNCTION};
-printing cmd_state;
 // Server returns one of the above.
 
 
@@ -29,8 +28,6 @@ struct thread_arg{
 
 class Server {
     private:
-        int User_cnt = 0, fd;
-        char buf[512] = "";
         map<string, User*> Users;
     public:
         status RegisterClient(string name);

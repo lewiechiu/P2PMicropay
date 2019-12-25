@@ -10,9 +10,6 @@
 #include <mutex>
 using namespace std;
 
-// enum status {SUCCESS, EXIST, UNDEFINED, ERROR};
-// enum Mode {REGISTER, LOGIN, QUIT, GET, PARSE_ERROR};
-
 Server SERVER;
 status Server::GoOnline(string name, string port, string ip){
     map<string, User*>::iterator itr;
@@ -34,6 +31,7 @@ status Server::RegisterClient(string name){
     name.erase(0, 9);
     while(name.find('\n')!= string::npos)
         name.replace(name.find('\n'), 1, "");
+
     cout << "**** Register User ****" << endl;
     cout << "name: " <<  name << endl;
     map<string, User*>::iterator itr;

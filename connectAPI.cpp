@@ -16,6 +16,8 @@ void Client::SendCommand(string command, char* resp){
     write(sock, command.c_str(), command.length());
     return;
 }
+
+
 void Client::ReadLine(char* resp, bool print){
     memset(resp, 0, 1024);
     fd_set rfds;

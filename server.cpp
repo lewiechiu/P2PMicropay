@@ -17,24 +17,7 @@ int main(int argc, const char** argv) {
     bool status = false, present = false, msg_detail = false;
     int opt = 1;
     ThreadPool pool(5);
-    if (argc <= 1){
-        perror("arg missing");
-        exit(1);
-    }
-    if (argc >2){
-        if (argv[2] == "-d"){
-            // Show Reg, Login, Leave
-            cmd_state = FUNCTION;
-        }
-        else if(argv[2] == "-s"){
-            // Show List + above
-            cmd_state = LIST;
-        }
-        else{
-            // Show msg between cli and server
-            cmd_state = FULL;
-        }
-    }
+
 
     int fd, newfd;
 
@@ -61,7 +44,7 @@ int main(int argc, const char** argv) {
     }
 
     // listen()
-    if (listen(fd, 10) < 0){
+    if (listen(fd, 3) < 0){
         perror("listen");
         exit(1);
     }
