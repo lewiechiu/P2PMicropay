@@ -58,3 +58,8 @@ class Server {
 * GoOnline takes the client's name, incoming IP, and port. Update the state of *user* having *name*. If it doesn't exist, it will return an *210 fail* to client.
 * GoOffline, it will search for the clients name, and make *isOnline=false*.
 * GetClientList, searches for user name and output the string to *stringstream out*. This *out* variable is then converted to character array and sent.
+
+Reference for generating the RSA key pair. https://stackoverflow.com/questions/5927164/how-to-generate-rsa-private-key-using-openssl
+
+Encrypt, decrypt
+http://hayageek.com/rsa-encryption-decryption-openssl-c/

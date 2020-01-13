@@ -69,6 +69,14 @@ int main(int argc, char const *argv[])
         else if (option == 'C' && srv.LoginState()){
             // Chat with other client
             
+            string IP, port, amount;
+            cout << "Recipient Ip: ";
+            cin >> IP;
+            cout << "Recipient Port: ";
+            cin >> port;
+            cout << "Transferring: ";
+            cin >> amount;
+            srv.StartChatServer(IP, port, amount);
         }
         else if (option == 'Q' && srv.LoginState()){
             srv.GoOffline();

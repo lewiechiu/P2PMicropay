@@ -8,6 +8,13 @@
 #include <vector>
 #include <sstream>
 #include <mutex>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rsa.h>
+#include <openssl/bn.h>
+#include <fstream>
+
+#define KEYLEN 4096
 using namespace std;
 
 Server SERVER;
@@ -94,6 +101,26 @@ void ReadMsg(int& sock,char* msg, bool print){
     return ;
 }
 
+void ReadKeyByUser(string name, RSA* rsa){
+    ifstream user_pem;
+    unsigned char buf[4096];
+    user_pem.open(name.append("_s_public_key") );
+    user_pem >> buf;
+    user_pem.close();
+    BIO *key = BIO_new_mem_buf((void* )buf,-1);
+    PEM_read_bio_RSAPublicKey(key, &rsa, NULL, NULL);
+    BIO_free(key);
+}
+
+void Decrypt_message(string user, unsigned char * enc_data,int data_len,RSA* rsa, unsigned char *decrypted){
+    int  result = RSA_public_decrypt(data_len,enc_data,decrypted,rsa,RSA_PKCS1_PADDING);
+    printf("msg length : %d\n", data_len);
+    // printf("msg: %s", (char*)enc_data);
+    printf("Decrypted Msg length : %d\n", result);
+    printf("Decrypted Message: %s\n", (char*) decrypted);
+    return ;
+}
+
 void* client(thread_arg* arg){
     int sock = arg->sock;
     SendMsg(sock, "hello!");
@@ -104,46 +131,86 @@ void* client(thread_arg* arg){
     while(1){
         ReadMsg(sock,buf, true);
         string cmd(buf);
-        if(logged_in){
-            if (cmd.find("List") != string::npos){
-                stringstream out;
-                SERVER.GetClientList(name, out);
-                SendMsg(sock, out.str().c_str());
-            }
-            else if (cmd.find("Exit")!= string::npos){
-                cmd.erase(0, 5);
-                SERVER.GoOffline(name);
-                SendMsg(sock, "Goodbye");
-                close(sock);
-                break;
-            }
+        if(cmd.find("TRANSFER_PAYMENT") != string::npos){
+            cout << "[TRANSFER EVENT!]" << endl;
+            cmd.replace(0,16, "" );
+            string deduct_party = cmd.substr(0, cmd.find('#'));
+            deduct_party.replace(deduct_party.find('\n'), 1 , "");
+            cmd.replace(0, deduct_party.length() + 1, "");
+            string addition_party = cmd;
+            addition_party.replace(addition_party.find('\n'), 1 , "");
+            cout << "[PAYMENT]:" << endl << "-: " << deduct_party << "+: " << addition_party << endl;
+            ReadMsg(sock, buf, false);
+            RSA* addit;
+            RSA* deduc;
+            ReadKeyByUser(addition_party, addit);
+            unsigned char one_stage[4096];
+            Decrypt_message(addition_party, (unsigned char*)buf, 512, addit, one_stage);
+            ReadKeyByUser(deduct_party, deduc);
+            unsigned char final_stage[4096];
+            Decrypt_message(addition_party, one_stage, 512, addit, final_stage);
         }
         else{
-            if (cmd.find("LOGIN") != string::npos){
-                cmd.replace(0, 5, "");
-                name = cmd.substr(0, cmd.find('#'));
-                cmd.replace(0, name.length() + 1, "");
-                if (SERVER.GoOnline(name, cmd, IP_addr) == SUCCESS){
-                    logged_in = true;
-                    SendMsg(sock, "100 OK\n");
+            if(logged_in){
+                if (cmd.find("List") != string::npos){
                     stringstream out;
                     SERVER.GetClientList(name, out);
                     SendMsg(sock, out.str().c_str());
                 }
-                else{
-                    SendMsg(sock, "220 AUTH_FAIL\n");
+                else if (cmd.find("Exit")!= string::npos){
+                    cmd.erase(0, 5);
+                    SERVER.GoOffline(name);
+                    SendMsg(sock, "Goodbye");
+                    close(sock);
+                    break;
                 }
             }
-            else if (cmd.find("REGISTER") != string::npos ){
-                status response = SERVER.RegisterClient(cmd);
-                if (response == SUCCESS){
-                    SendMsg(sock, "100 OK\n");
+            else{
+                if (cmd.find("LOGIN") != string::npos){
+                    cmd.replace(0, 5, "");
+                    name = cmd.substr(0, cmd.find('#'));
+                    cmd.replace(0, name.length() + 1, "");
+                    if (SERVER.GoOnline(name, cmd, IP_addr) == SUCCESS){
+                        logged_in = true;
+                        SendMsg(sock, "100 OK\n");
+                        stringstream out;
+                        SERVER.GetClientList(name, out);
+                        SendMsg(sock, out.str().c_str() );
+                        ReadMsg(sock, buf, true);
+                        ofstream user_pem;
+                        user_pem.open(name.append("_s_public_key") );
+                        user_pem << buf;
+                        user_pem.close();
+                        RSA* rsa = NULL;
+                        BIO *key = BIO_new_mem_buf((void* )buf,-1);
+                        PEM_read_bio_RSAPublicKey(key, &rsa, NULL, NULL);
+                        BIO_free(key);
+                        puts("key restored");
+                        ReadMsg(sock,buf, false);
+                        unsigned char msg_dec[KEYLEN]={0};
+                        string ms_len(buf);
+                        int msg_len = stoi(ms_len);
+                        SendMsg(sock, "good");
+                        ReadMsg(sock, buf, false);
+                        Decrypt_message(name, (unsigned char* )buf, msg_len, rsa, msg_dec);
+                        
+                    }
+                    else{
+                        SendMsg(sock, "220 AUTH_FAIL\n");
+                    }
                 }
-                else {
-                    SendMsg(sock, "210 fail\n");
+                else if (cmd.find("REGISTER") != string::npos ){
+                    status response = SERVER.RegisterClient(cmd);
+                    if (response == SUCCESS){
+                        SendMsg(sock, "100 OK\n");
+                    }
+                    else {
+                        SendMsg(sock, "210 fail\n");
+                    }
                 }
             }
         }
+        
         cmd.clear();
     }
 }

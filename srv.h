@@ -7,6 +7,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <map>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/rsa.h>
+#include <openssl/bn.h>
 using namespace std;
 
 enum status {SUCCESS, EXIST, UNDEFINED, ERROR};
@@ -19,6 +23,7 @@ struct User{
     string Name = "", Ip = "", Port = "";
     int balance = 10000;
     bool isOnline;
+    char* pub_key;
 };
 
 struct thread_arg{
@@ -39,7 +44,8 @@ class Server {
 
 void SendMsg(int& sock,const char* msg);
 void ReadMsg(int& sock, char* msg, bool print);
-
+void Decrypt_message(string user, unsigned char * enc_data,int data_len,RSA* rsa, unsigned char *decrypted);
+void ReadKeyByUser(string name, RSA* rsa);
 Mode parsing(string cmd);
 
 void * client(thread_arg* arg);
